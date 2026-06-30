@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db.connection import Base
 
 if TYPE_CHECKING:
+    from db.models.inventory_movement import InventoryMovement
     from db.models.production_batch import ProductionBatch
     from db.models.recipe import Recipe
 
@@ -36,6 +37,9 @@ class Product(Base):
 
     recipes: Mapped[list["Recipe"]] = relationship(back_populates="product")
     production_batches: Mapped[list["ProductionBatch"]] = relationship(
+        back_populates="product"
+    )
+    inventory_movements: Mapped[list["InventoryMovement"]] = relationship(
         back_populates="product"
     )
 

@@ -24,6 +24,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 from db.connection import Base
 
 if TYPE_CHECKING:
+    from db.models.inventory_movement import InventoryMovement
     from db.models.product import Product
     from db.models.recipe import Recipe
 
@@ -130,6 +131,9 @@ class ProductionBatch(Base):
 
     product: Mapped["Product"] = relationship(back_populates="production_batches")
     recipe: Mapped["Recipe"] = relationship(back_populates="production_batches")
+    inventory_movements: Mapped[list["InventoryMovement"]] = relationship(
+        back_populates="production_batch"
+    )
 
     @classmethod
     def assign_batch_identity(

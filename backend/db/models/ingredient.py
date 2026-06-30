@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db.connection import Base
 
 if TYPE_CHECKING:
+    from db.models.inventory_movement import InventoryMovement
     from db.models.recipe import RecipeIngredient
 
 
@@ -38,6 +39,9 @@ class Ingredient(Base):
     )
 
     recipe_lines: Mapped[list["RecipeIngredient"]] = relationship(back_populates="ingredient")
+    inventory_movements: Mapped[list["InventoryMovement"]] = relationship(
+        back_populates="ingredient"
+    )
 
     def __repr__(self) -> str:
         return (

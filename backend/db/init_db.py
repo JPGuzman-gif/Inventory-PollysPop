@@ -3,6 +3,7 @@
 from db.connection import Base, engine
 from db.models import (  # noqa: F401 — register models
     Ingredient,
+    InventoryMovement,
     Product,
     ProductionBatch,
     Recipe,

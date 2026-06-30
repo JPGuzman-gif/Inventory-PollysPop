@@ -1,4 +1,5 @@
 from db.models.ingredient import Ingredient
+from db.models.inventory_movement import InventoryMovement, MovementType
 from db.models.product import Product
 from db.models.production_batch import (
     BatchStatus,
@@ -13,6 +14,8 @@ from db.models.recipe import Recipe, RecipeIngredient
 __all__ = [
     "BatchStatus",
     "Ingredient",
+    "InventoryMovement",
+    "MovementType",
     "PalletConfigurationType",
     "Product",
     "ProductionBatch",

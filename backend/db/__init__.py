@@ -2,6 +2,8 @@ from db.connection import Base, SessionLocal, engine, get_db, get_database_url
 from db.models import (
     BatchStatus,
     Ingredient,
+    InventoryMovement,
+    MovementType,
     PalletConfigurationType,
     Product,
     ProductionBatch,
@@ -16,6 +18,8 @@ __all__ = [
     "Base",
     "BatchStatus",
     "Ingredient",
+    "InventoryMovement",
+    "MovementType",
     "PalletConfigurationType",
     "Product",
     "ProductionBatch",
