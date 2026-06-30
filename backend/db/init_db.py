@@ -1,7 +1,13 @@
 """Create all tables defined on Base.metadata."""
 
 from db.connection import Base, engine
-from db.models import Ingredient, Product, Recipe, RecipeIngredient  # noqa: F401 — register models
+from db.models import (  # noqa: F401 — register models
+    Ingredient,
+    Product,
+    ProductionBatch,
+    Recipe,
+    RecipeIngredient,
+)
 
 
 def init_db() -> None:

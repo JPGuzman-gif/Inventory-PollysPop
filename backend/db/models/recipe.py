@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -15,6 +16,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.connection import Base
+
+if TYPE_CHECKING:
+    from db.models.production_batch import ProductionBatch
 
 
 class Recipe(Base):
@@ -49,6 +53,9 @@ class Recipe(Base):
     ingredients: Mapped[list["RecipeIngredient"]] = relationship(
         back_populates="recipe",
         cascade="all, delete-orphan",
+    )
+    production_batches: Mapped[list["ProductionBatch"]] = relationship(
+        back_populates="recipe"
     )
 
     def __repr__(self) -> str:
