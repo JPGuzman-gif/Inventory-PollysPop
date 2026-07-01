@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import brands, export, health, pallets, products
 from app.config import APP_NAME, DEBUG
-from db.connection import get_db  # noqa: F401 — FastAPI dependency, used by future routes
+from db.connection import get_db  # noqa: F401 — FastAPI dependency for route handlers
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 

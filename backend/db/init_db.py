@@ -5,7 +5,7 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from db.connection import engine
+from db.connection import check_connection, engine, get_dialect_name, require_postgresql
 
 DB_DIR = Path(__file__).resolve().parent
 SCHEMA_PATH = DB_DIR / "schema.sql"
@@ -59,6 +59,13 @@ def _apply_sql_file(path: Path) -> int:
 
 def reset_db() -> None:
     """Drop all known tables (including legacy prototype) and reapply schema + seed."""
+    ok, message = check_connection()
+    if not ok:
+        print(f"Database connection failed: {message}")
+        raise SystemExit(1)
+
+    require_postgresql()
+
     with engine.begin() as connection:
         for table in DROP_ORDER:
             connection.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE"))
@@ -68,6 +75,14 @@ def reset_db() -> None:
 
 
 def init_db() -> None:
+    ok, message = check_connection()
+    if not ok:
+        print(f"Database connection failed: {message}")
+        raise SystemExit(1)
+
+    print(f"Connected ({get_dialect_name()}).")
+    require_postgresql()
+
     if not SCHEMA_PATH.exists():
         print("schema.sql not found — add CREATE TABLE SQL and re-run.")
         return
