@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import health
+from app.api.routes import brands, export, health, pallets, products
 from app.config import APP_NAME, DEBUG
 from db.connection import get_db  # noqa: F401 — FastAPI dependency, used by future routes
 
@@ -29,6 +29,10 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(brands.router)
+app.include_router(products.router)
+app.include_router(pallets.router)
+app.include_router(export.router)
 
 if FRONTEND_DIR.is_dir():
     app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
