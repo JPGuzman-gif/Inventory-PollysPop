@@ -1,33 +1,27 @@
-"""Provisional pallet barcode generation.
+"""Pallet barcode generation.
 
-Format: PP-{flavor_code}-{YYYYMMDD}-{pallet_seq}
-Example: PP-BC-20260701-003
+This system generates pallet numbers only. Bottle, 4-pack, and case UPCs are
+third-party codes stored as reference data on `products` — never generated here.
 
-Adjust this module when Cole provides the final label format (feature/08-barcode-adjust).
+Format: {pallet_seq} — global counter zero-padded to 5 digits.
+Examples: 00001, 00002, 00003
+
+Adjust this module when Cole provides the final pallet label format.
 """
 
 from __future__ import annotations
 
 import io
 import re
-from datetime import date
 
 from barcode import Code128
 from barcode.writer import SVGWriter
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-BARCODE_PREFIX = "PP"
-DATE_FORMAT = "%Y%m%d"
-PALLET_SEQ_WIDTH = 3
+PALLET_SEQ_WIDTH = 5
 
-BARCODE_PATTERN = re.compile(
-    rf"^{BARCODE_PREFIX}-[A-Z0-9]{{2,10}}-\d{{8}}-\d{{{PALLET_SEQ_WIDTH}}}$"
-)
-
-
-def format_bottling_date(bottled_at: date) -> str:
-    return bottled_at.strftime(DATE_FORMAT)
+PALLET_BARCODE_PATTERN = re.compile(rf"^\d{{{PALLET_SEQ_WIDTH}}}$")
 
 
 def format_pallet_sequence(pallet_number: int) -> str:
@@ -36,62 +30,39 @@ def format_pallet_sequence(pallet_number: int) -> str:
     return str(pallet_number).zfill(PALLET_SEQ_WIDTH)
 
 
-def generate_barcode(flavor_code: str, bottled_at: date, pallet_number: int) -> str:
-    """Build the human-readable pallet barcode string."""
-    normalized = flavor_code.upper().strip()
-    if not normalized:
-        raise ValueError("flavor_code is required")
-
-    barcode = (
-        f"{BARCODE_PREFIX}-{normalized}-"
-        f"{format_bottling_date(bottled_at)}-"
-        f"{format_pallet_sequence(pallet_number)}"
-    )
-    if not BARCODE_PATTERN.match(barcode):
+def generate_pallet_barcode(pallet_number: int) -> str:
+    """Build the scannable pallet barcode string (sequence number only)."""
+    barcode = format_pallet_sequence(pallet_number)
+    if not PALLET_BARCODE_PATTERN.match(barcode):
         raise ValueError(f"generated barcode does not match expected format: {barcode}")
     return barcode
 
 
-def parse_barcode(barcode: str) -> tuple[str, date, int]:
-    """Parse a provisional barcode into flavor code, bottling date, and pallet number."""
-    normalized = barcode.strip().upper()
-    if not BARCODE_PATTERN.match(normalized):
-        raise ValueError(f"invalid barcode format: {barcode}")
-
-    _, flavor_code, date_part, seq_part = normalized.split("-")
-    bottled_at = date.fromisoformat(
-        f"{date_part[:4]}-{date_part[4:6]}-{date_part[6:8]}"
-    )
-    return flavor_code, bottled_at, int(seq_part)
+def parse_pallet_barcode(barcode: str) -> int:
+    """Parse a pallet barcode into its numeric pallet number."""
+    normalized = barcode.strip()
+    if not PALLET_BARCODE_PATTERN.match(normalized):
+        raise ValueError(f"invalid pallet barcode format: {barcode}")
+    return int(normalized)
 
 
-def get_next_pallet_number(
-    connection: Connection, product_id: int, bottled_at: date
-) -> int:
-    """Return the next sequential pallet number for a product on a bottling date."""
+def get_next_pallet_number(connection: Connection) -> int:
+    """Return the next global pallet number (1, 2, 3, ...)."""
     row = connection.execute(
         text(
             """
             SELECT COALESCE(MAX(pallet_number), 0) + 1 AS next_number
             FROM pallets
-            WHERE product_id = :product_id
-              AND bottled_at = :bottled_at
             """
         ),
-        {"product_id": product_id, "bottled_at": bottled_at},
     ).one()
     return int(row.next_number)
 
 
-def allocate_barcode(
-    connection: Connection,
-    flavor_code: str,
-    product_id: int,
-    bottled_at: date,
-) -> tuple[int, str]:
+def allocate_pallet_barcode(connection: Connection) -> tuple[int, str]:
     """Reserve the next pallet number and return (pallet_number, barcode)."""
-    pallet_number = get_next_pallet_number(connection, product_id, bottled_at)
-    barcode = generate_barcode(flavor_code, bottled_at, pallet_number)
+    pallet_number = get_next_pallet_number(connection)
+    barcode = generate_pallet_barcode(pallet_number)
     return pallet_number, barcode
 
 
