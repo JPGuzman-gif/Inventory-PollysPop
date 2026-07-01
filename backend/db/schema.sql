@@ -21,3 +21,140 @@ CREATE TABLE brands (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    brand_id INTEGER NOT NULL REFERENCES brands(id) ON DELETE RESTRICT,
+    name VARCHAR(100) NOT NULL,
+    flavor_code VARCHAR(10) NOT NULL,
+    is_diet BOOLEAN NOT NULL DEFAULT FALSE,
+    upc_bottle VARCHAR(20),
+    upc_4pack VARCHAR(20),
+    upc_case VARCHAR(20),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_products_brand_name UNIQUE (brand_id, name),
+    CONSTRAINT uq_products_brand_flavor_code UNIQUE (brand_id, flavor_code),
+    CONSTRAINT ck_products_flavor_code_format CHECK (flavor_code ~ '^[A-Z0-9]{2,10}$')
+);
+
+CREATE INDEX idx_products_brand_id ON products (brand_id);
+
+CREATE TABLE production_batches (
+    id SERIAL PRIMARY KEY,
+    batch_number VARCHAR(20) NOT NULL UNIQUE,
+    bottle_batch_number VARCHAR(10) NOT NULL UNIQUE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    bottled_at DATE NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_production_batches_batch_number_format CHECK (batch_number ~ '^\d{7}$'),
+    CONSTRAINT ck_production_batches_bottle_batch_format CHECK (bottle_batch_number ~ '^BB\d{3}$')
+);
+
+CREATE INDEX idx_production_batches_product_id ON production_batches (product_id);
+CREATE INDEX idx_production_batches_bottled_at ON production_batches (bottled_at);
+
+CREATE TABLE pallets (
+    id SERIAL PRIMARY KEY,
+    pallet_number INTEGER NOT NULL,
+    barcode VARCHAR(50) NOT NULL UNIQUE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    production_batch_id INTEGER REFERENCES production_batches(id) ON DELETE SET NULL,
+    expiration_date DATE NOT NULL,
+    bottled_at DATE NOT NULL DEFAULT CURRENT_DATE,
+    current_location VARCHAR(50) NOT NULL DEFAULT 'Production Floor',
+    status VARCHAR(20) NOT NULL DEFAULT 'active',
+    sold_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_pallets_product_bottled_pallet_number UNIQUE (product_id, bottled_at, pallet_number),
+    CONSTRAINT ck_pallets_location CHECK (
+        current_location IN ('Production Floor', 'Warehouse 1', 'Warehouse 2')
+    ),
+    CONSTRAINT ck_pallets_status CHECK (status IN ('active', 'sold')),
+    CONSTRAINT ck_pallets_pallet_number_positive CHECK (pallet_number >= 1),
+    CONSTRAINT ck_pallets_sold_at_when_sold CHECK (
+        (status = 'sold' AND sold_at IS NOT NULL)
+        OR (status = 'active' AND sold_at IS NULL)
+    )
+);
+
+CREATE INDEX idx_pallets_product_id ON pallets (product_id);
+CREATE INDEX idx_pallets_status ON pallets (status);
+CREATE INDEX idx_pallets_expiration_date ON pallets (expiration_date);
+CREATE INDEX idx_pallets_current_location ON pallets (current_location);
+
+CREATE TABLE inventory_movements (
+    id SERIAL PRIMARY KEY,
+    pallet_id INTEGER NOT NULL REFERENCES pallets(id) ON DELETE RESTRICT,
+    movement_type VARCHAR(20) NOT NULL,
+    from_location VARCHAR(50),
+    to_location VARCHAR(50),
+    moved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    notes TEXT,
+    CONSTRAINT ck_inventory_movements_type CHECK (
+        movement_type IN ('create', 'transfer', 'sell')
+    ),
+    CONSTRAINT ck_inventory_movements_locations CHECK (
+        from_location IS NULL
+        OR from_location IN ('Production Floor', 'Warehouse 1', 'Warehouse 2')
+    ),
+    CONSTRAINT ck_inventory_movements_to_location CHECK (
+        to_location IS NULL
+        OR to_location IN ('Production Floor', 'Warehouse 1', 'Warehouse 2')
+    ),
+    CONSTRAINT ck_inventory_movements_create CHECK (
+        movement_type != 'create'
+        OR (from_location IS NULL AND to_location = 'Production Floor')
+    ),
+    CONSTRAINT ck_inventory_movements_transfer CHECK (
+        movement_type != 'transfer'
+        OR (
+            from_location IS NOT NULL
+            AND to_location IS NOT NULL
+            AND from_location != to_location
+        )
+    ),
+    CONSTRAINT ck_inventory_movements_sell CHECK (
+        movement_type != 'sell'
+        OR (from_location IS NOT NULL AND to_location IS NULL)
+    )
+);
+
+CREATE INDEX idx_inventory_movements_pallet_id ON inventory_movements (pallet_id);
+CREATE INDEX idx_inventory_movements_moved_at ON inventory_movements (moved_at);
+
+CREATE TABLE sold_products (
+    id SERIAL PRIMARY KEY,
+    pallet_id INTEGER NOT NULL UNIQUE REFERENCES pallets(id) ON DELETE RESTRICT,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    brand_name VARCHAR(100) NOT NULL,
+    flavor_name VARCHAR(100) NOT NULL,
+    expiration_date DATE NOT NULL,
+    sold_from_location VARCHAR(50) NOT NULL,
+    sold_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_sold_products_location CHECK (
+        sold_from_location IN ('Production Floor', 'Warehouse 1', 'Warehouse 2')
+    )
+);
+
+CREATE INDEX idx_sold_products_sold_at ON sold_products (sold_at);
+CREATE INDEX idx_sold_products_product_id ON sold_products (product_id);
+
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    notification_type VARCHAR(50) NOT NULL,
+    pallet_id INTEGER REFERENCES pallets(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+    message TEXT NOT NULL,
+    threshold_date DATE,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    sent_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_notifications_type CHECK (
+        notification_type IN ('expiration_alert', 'flavor_order_reminder')
+    )
+);
+
+CREATE INDEX idx_notifications_pallet_id ON notifications (pallet_id);
+CREATE INDEX idx_notifications_type ON notifications (notification_type);
