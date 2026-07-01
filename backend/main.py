@@ -1,8 +1,15 @@
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import health
 from app.config import APP_NAME, DEBUG
 from db.connection import get_db  # noqa: F401 — FastAPI dependency, used by future routes
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 app = FastAPI(
     title=APP_NAME,
@@ -13,12 +20,23 @@ app = FastAPI(
     debug=DEBUG,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(health.router)
+
+if FRONTEND_DIR.is_dir():
+    app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 
 @app.get("/")
-def root() -> dict[str, str]:
-    return {"message": "Polly's Pop API", "docs": "/docs"}
+def root() -> RedirectResponse:
+    return RedirectResponse(url="/app/")
 
 
 if __name__ == "__main__":

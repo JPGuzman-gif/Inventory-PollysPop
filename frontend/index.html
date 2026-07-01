@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Polly's Pop — Inventory</title>
+    <link rel="stylesheet" href="/app/css/styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <strong>Polly's Pop</strong>
+          <span>Production &amp; Inventory</span>
+        </div>
+
+        <nav class="nav-section">
+          <h2>Overview</h2>
+          <a class="nav-link" href="#dashboard" data-route="dashboard">Dashboard</a>
+          <a class="nav-link" href="#feature-status" data-route="feature-status">Feature Status</a>
+        </nav>
+
+        <nav class="nav-section">
+          <h2>Phase 1 — Manual Entry</h2>
+          <a class="nav-link" href="#create" data-route="create">
+            Create Pallet
+            <small>Generate pallet barcode</small>
+          </a>
+          <a class="nav-link" href="#move" data-route="move">
+            Move to Storage
+            <small>Warehouse 1 or 2</small>
+          </a>
+          <a class="nav-link" href="#sell" data-route="sell">
+            Sell Pallet
+            <small>Record sale</small>
+          </a>
+          <a class="nav-link" href="#inventory" data-route="inventory">Inventory</a>
+          <a class="nav-link" href="#expiring" data-route="expiring">
+            Expiring Soon
+            <small>90-day threshold</small>
+          </a>
+          <a class="nav-link" href="#export" data-route="export">Export Sales CSV</a>
+        </nav>
+
+        <nav class="nav-section">
+          <h2>Phase 2 — Planned</h2>
+          <a class="nav-link" href="#scanner" data-route="scanner">
+            Scanner
+            <small>Hardware gun integration</small>
+          </a>
+          <a class="nav-link" href="#notifications" data-route="notifications">
+            Notifications
+            <small>Email &amp; flavor orders</small>
+          </a>
+          <a class="nav-link" href="#analytics" data-route="analytics">
+            Analytics
+            <small>Sales prediction API</small>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section id="view-dashboard" class="view hidden"></section>
+        <section id="view-feature-status" class="view hidden"></section>
+        <section id="view-create" class="view hidden"></section>
+        <section id="view-move" class="view hidden"></section>
+        <section id="view-sell" class="view hidden"></section>
+        <section id="view-inventory" class="view hidden"></section>
+        <section id="view-expiring" class="view hidden"></section>
+        <section id="view-export" class="view hidden"></section>
+        <section id="view-scanner" class="view hidden"></section>
+        <section id="view-notifications" class="view hidden"></section>
+        <section id="view-analytics" class="view hidden"></section>
+      </main>
+    </div>
+
+    <script type="module" src="/app/js/app.js"></script>
+  </body>
+</html>
